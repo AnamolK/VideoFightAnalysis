@@ -84,7 +84,7 @@ def detect_strike(landmarks, side='right'):
     return False
 
 
-# **Enhanced Takedown Detection Function**
+# Enhanced Takedown Detection Function
 def detect_takedown(landmarks_prev, landmarks_current, side='left', orientation_threshold=5, vertical_threshold=0.1):
     """
     Detects a takedown based on downward hip movement and torso angle approaching horizontal.
@@ -138,7 +138,7 @@ def detect_takedown(landmarks_prev, landmarks_current, side='left', orientation_
 prev_landmarks_F1 = None
 prev_landmarks_F2 = None
 
-# **Set desired frame width and height to resize (Added Section)**
+# Set desired frame width and height to resize
 desired_width = 1280
 desired_height = 720
 
@@ -151,7 +151,7 @@ while cap.isOpened():
     if frame_count > round_end_frame:
         break  # End of round
 
-    # Resize the frame to the desired size (Added Section)
+    # Resize the frame to the desired size
     frame = cv2.resize(frame, (desired_width, desired_height))
 
     # Process frames within the round's timeframe
@@ -188,10 +188,16 @@ while cap.isOpened():
                 # Extract landmarks
                 if results_f1.pose_landmarks:
                     landmarks_f1 = [(lm.x, lm.y, lm.z) for lm in results_f1.pose_landmarks.landmark]
-                    # Detect strike for Fighter 1
-                    if detect_strike(landmarks_f1, side='right'):
+
+                    # Detect strikes for Fighter 1 (both arms)
+                    strike_detected_F1 = False
+                    for side in ['right', 'left']:
+                        if detect_strike(landmarks_f1, side=side):
+                            strike_detected_F1 = True
+                            print(f"Strike detected for Fighter 1 ({side} arm) at frame {frame_count}")
+
+                    if strike_detected_F1:
                         total_strikes_F1 += 1
-                        print(f"Strike detected for Fighter 1 at frame {frame_count}")
 
                     # Detect takedown for Fighter 1
                     if prev_landmarks_F1 is not None:
@@ -202,10 +208,16 @@ while cap.isOpened():
 
                 if results_f2.pose_landmarks:
                     landmarks_f2 = [(lm.x, lm.y, lm.z) for lm in results_f2.pose_landmarks.landmark]
-                    # Detect strike for Fighter 2
-                    if detect_strike(landmarks_f2, side='left'):
+
+                    # Detect strikes for Fighter 2 (both arms)
+                    strike_detected_F2 = False
+                    for side in ['right', 'left']:
+                        if detect_strike(landmarks_f2, side=side):
+                            strike_detected_F2 = True
+                            print(f"Strike detected for Fighter 2 ({side} arm) at frame {frame_count}")
+
+                    if strike_detected_F2:
                         total_strikes_F2 += 1
-                        print(f"Strike detected for Fighter 2 at frame {frame_count}")
 
                     # Detect takedown for Fighter 2
                     if prev_landmarks_F2 is not None:
@@ -215,8 +227,7 @@ while cap.isOpened():
                     prev_landmarks_F2 = landmarks_f2
 
 
-                # **Improved Pose Visualization (Added Section)**
-
+                # Improved Pose Visualization
                 # Function to map landmarks from cropped to main frame coordinates
                 def map_landmarks(landmarks, bbox):
                     """
@@ -256,8 +267,6 @@ while cap.isOpened():
 
                 # Draw landmarks and connections for Fighter 1
                 if mapped_landmarks_f1:
-                    # Convert to MediaPipe's Landmark format
-                    landmarks_proto_f1 = mp_pose.PoseLandmark
                     for connection in mp_pose.POSE_CONNECTIONS:
                         start_idx, end_idx = connection
                         if start_idx < len(mapped_landmarks_f1) and end_idx < len(mapped_landmarks_f1):
@@ -280,15 +289,13 @@ while cap.isOpened():
                     for idx, lm in enumerate(mapped_landmarks_f2):
                         cv2.circle(frame, lm, 4, (255, 0, 0), -1)
 
-                # **End of Improved Pose Visualization**
-
                 # Draw bounding boxes
                 # Fighter 1
                 cv2.rectangle(frame, (int(x1_min), int(y1_min)), (int(x1_max), int(y1_max)), (0, 255, 0), 2)
                 # Fighter 2
                 cv2.rectangle(frame, (int(x2_min), int(y2_min)), (int(x2_max), int(y2_max)), (255, 0, 0), 2)
 
-                # **Add Real-Time Strike Tracking Display (Existing Section)**
+                # Add Real-Time Strike Tracking Display
                 # Define the position and font for the text
                 font = cv2.FONT_HERSHEY_SIMPLEX
                 font_scale = 1
@@ -303,7 +310,7 @@ while cap.isOpened():
                 # Put the texts on the frame
                 cv2.putText(frame, text_F1, (10, 30), font, font_scale, font_color, thickness, line_type)
                 cv2.putText(frame, text_F2, (10, 70), font, font_scale, font_color, thickness, line_type)
-                # **End of Strike Tracking Display**
+                # End of Strike Tracking Display
 
                 # Display the frame with annotations (for debugging)
                 cv2.imshow('Fight Analysis', frame)
